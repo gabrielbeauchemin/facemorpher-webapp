@@ -1,0 +1,21 @@
+extends layout
+
+block content
+    <div class="div-centered">
+        <div class="containerForm">
+            <h1>Multiple Faces Morphing</h1><br/>
+            <h4>Select the images to morph and the morphing options</h4>
+            <form action="/multipleFacesMorphingRes" method="post" id="uploadImage" enctype="multipart/form-data">
+                <label for="imgs">Images</label>
+                <input type="file" name="images" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" multiple> 
+                <label for="widthImgs">Width of the output images</label>
+                <input type="number" name="widthImgs" value="300" min="1" max="1000" required > <br/>
+                <label for="heigthImgs">Heigth of the output images</label>
+                <input type="number" name="heigthImgs" value="300" min="1" max="1000" required > <br/>
+                <label for="nbrImgs">Number of images to generate</label> 
+                <input type="number" name="nbrImgs" value="30" min="1" max="100" required ><br/>
+                <br/>
+                <input class="page-scroll btn btn-xl" type="submit" value="Morph" a>
+            </form>
+        </div>
+    

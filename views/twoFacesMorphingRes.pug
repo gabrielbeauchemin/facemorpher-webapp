@@ -1,0 +1,18 @@
+extends layout
+
+block content
+    img(src='') 
+    <div class="div-centered">
+      <h1>Morphing Two Faces Results</h1>
+      <div class="row">
+        <div class="column33">
+            img.image(src= "./" +img1Path, width="100%" height="100%")
+        </div>
+        <div class="column33">
+            img.image(src="./" + imgInter, width="100%" height="100%")                
+        </div>
+        <div class="column33">
+            img.image(src="./" + img2Path, width="100%" height="100%")                
+        </div>
+      </div>
+    </div>

@@ -1,0 +1,50 @@
+extends layout
+
+block headerContent
+    <link rel="stylesheet" href="/stylesheets/jcrop/jquery.Jcrop.css" type="text/css" />
+
+block content
+    //jcrop to crop images
+    script 
+        include ../public/javascripts/jcrop/jquery.Jcrop.js
+
+    script.
+        var loadFileImg1 = function(event) {
+                            var output = document.getElementById('outputImg1');
+                            output.src = URL.createObjectURL(event.target.files[0]);
+                            jQuery(function($){$('#outputImg1').Jcrop();});
+                        };
+        var loadFileImg2 = function(event) {
+                            var output = document.getElementById('outputImg2');
+                            output.src = URL.createObjectURL(event.target.files[0]);
+                            jQuery(function($){$('#outputImg2').Jcrop();});
+                        };
+
+    <div class="div-centered">
+        <div class="containerForm">
+            <h1>Two Faces Morphing</h1><br/>
+            <form action="/twoFacesMorphingRes" method="post" id="uploadImage" enctype="multipart/form-data">
+                <label>Choose the images and select only the section of the face</label>
+                <input type="file" name="pic" value="img1" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadFileImg1(event)" required > 
+                <input type="file" name="pic" value="img2" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadFileImg2(event)" required >
+                <div class="row">
+                    <div class="column50">
+                        <img id="outputImg1" name="images"  width="100%" height="100%"/>
+                    </div>
+                    <div class="column50">
+                        <img id="outputImg2" name="images"  width="100%" height="100%"/>                
+                    </div>
+                </div>
+                <br/>
+                <label for="widthImgs">Width of the output images</label>
+                <input type="number" name="widthImgs" value="300" min="1" max="1000" required > <br/>
+                <label for="heigthImgs">Heigth of the output images</label>
+                <input type="number" name="heigthImgs" value="300" min="1" max="1000" required > <br/>
+                <label for="nbrImgs">Number of images to generate</label> 
+                <input type="number" name="nbrImgs" value="30" min="1" max="100" required ><br/>
+                <br/>
+                <input class="page-scroll btn btn-xl" type="submit" value="Morph" a>
+            </form>
+        </div>
+    </div>
+    
