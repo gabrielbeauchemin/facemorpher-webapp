@@ -7,7 +7,7 @@ block content
             <h4>Select the images to morph and the morphing options</h4>
             <form action="/multipleFacesMorphingRes" method="post" id="uploadImage" enctype="multipart/form-data">
                 <label for="imgs">Images</label>
-                <input type="file" name="images" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" multiple> 
+                <input type="file" name="images" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" multiple required> 
                 <label for="widthImgs">Width of the output images</label>
                 <input type="number" name="widthImgs" value="300" min="1" max="1000" required > <br/>
                 <label for="heigthImgs">Heigth of the output images</label>

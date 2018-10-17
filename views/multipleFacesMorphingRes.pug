@@ -1,15 +1,25 @@
 extends layout
 
 block content
+    
     <div class="div-centered">
         <h1>Morphing Multiple Faces Results</h1>
-        <div class="row">
-            <div class="column50">
-                <img src="\" + img1Path  width="100%" height="100%"/>
+        if inputImgs.length < 2
+            <span style="color:#ff0000;">To generate new images using morphing, we need at least 2 images.</span>
+            <br/>
+
+        <h3>Input Visages:</h3>
+        each inputImg in inputImgs
+            <div class="responsive">
+                <div class="gallery">
+                    img.image(src= "./" + inputImg, width=600 height=400)
+                </div>
             </div>
-            <div class="column50">
-                <img src= "\" + imgInter  width="100%" height="100%"/>                
-            </div>
-        </div>
+        <div class="clearfix"></div>
+        <br/>
+
+        <h3>Morphed Visages:</h3>
+
+
     </div>
     

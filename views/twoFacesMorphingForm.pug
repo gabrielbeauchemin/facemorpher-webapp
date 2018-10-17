@@ -9,31 +9,189 @@ block content
         include ../public/javascripts/jcrop/jquery.Jcrop.js
 
     script.
-        var loadFileImg1 = function(event) {
-                            var output = document.getElementById('outputImg1');
-                            output.src = URL.createObjectURL(event.target.files[0]);
-                            jQuery(function($){$('#outputImg1').Jcrop();});
-                        };
-        var loadFileImg2 = function(event) {
-                            var output = document.getElementById('outputImg2');
-                            output.src = URL.createObjectURL(event.target.files[0]);
-                            jQuery(function($){$('#outputImg2').Jcrop();});
-                        };
+        var crop_max_width = 600;
+        var crop_max_height = 600;
+        var jcropApiImg1;
+        var canvasImg1; 
+        var contextImg1; 
+        var image1; 
+        var jcropApiImg2;
+        var canvasImg2; 
+        var contextImg2; 
+        var image2; 
+
+        function loadImage(event) {
+        if (event.target.files && event.target.files[0]) {
+            let selectedImgId = event.currentTarget.id;
+            if(selectedImgId == 'inputImg1')
+            {
+                var reader = new FileReader();
+                canvasImg1 = null;
+                reader.onload = function(e) {
+                image1 = new Image();
+                image1.onload = function(){validateImage(selectedImgId);};
+                image1.src = URL.createObjectURL(event.target.files[0]);
+                }
+                reader.readAsDataURL(event.target.files[0]);
+            }
+            else if(selectedImgId == 'inputImg2')
+            {
+                var reader = new FileReader();
+                canvasImg2 = null;
+                reader.onload = function(e) {
+                image2 = new Image();
+                image2.onload = function(){validateImage(selectedImgId);};
+                image2.src = URL.createObjectURL(event.target.files[0]);
+                }
+                reader.readAsDataURL(event.target.files[0]); 
+            }
+            
+            }
+        }
+
+        function dataURLtoBlob(dataURL) {
+        var BASE64_MARKER = ';base64,';
+        if (dataURL.indexOf(BASE64_MARKER) == -1) {
+            var parts = dataURL.split(',');
+            var contentType = parts[0].split(':')[1];
+            var raw = decodeURIComponent(parts[1]);
+
+            return new Blob([raw], {
+            type: contentType
+            });
+        }
+        var parts = dataURL.split(BASE64_MARKER);
+        var contentType = parts[0].split(':')[1];
+        var raw = window.atob(parts[1]);
+        var rawLength = raw.length;
+        var uInt8Array = new Uint8Array(rawLength);
+        for (var i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+
+        return new Blob([uInt8Array], {
+            type: contentType
+        });
+        }
+
+        function validateImage(imgId) {
+            if(imgId == "inputImg1")
+            {
+                if (canvasImg1 != null) {
+                image1 = new Image();
+                image1.id = imgId;
+                image1.onload = function(){restartJcrop(imgId);};
+                image1.src = canvasImg1.toDataURL('image/png');
+                } else restartJcrop(imgId);
+            }
+            else if(imgId == "inputImg2")
+            {
+                if (canvasImg2 != null) {
+                image2 = new Image();
+                image2.id = imgId;
+                image2.onload = function(){restartJcrop(imgId);};
+                image2.src = canvasImg2.toDataURL('image/png');
+                } else restartJcrop(imgId);
+            }
+        }
+
+        function restartJcrop(imgId) {
+
+            if(imgId == 'inputImg1')
+            {
+                if (jcropApiImg1 != null) {
+                jcropApiImg1.destroy();
+                }
+                $("#imgViews #inputImg1").empty();
+                $("#imgViews #inputImg1").append("<div class=\"column50\"> <canvas id=\"canvasImg1\"></div>");
+                canvasImg1 = $("#canvasImg1")[0];
+                contextImg1 = canvasImg1.getContext("2d");
+                canvasImg1.width = image1.width;
+                canvasImg1.height = image1.height;
+                contextImg1.drawImage(image1, 0, 0);
+                $("#canvasImg1").Jcrop({
+                    onSelect: function(coord){applyCrop(coord, imgId);},
+                    boxWidth: crop_max_width,
+                    boxHeight: crop_max_height
+                }, function() {
+                    jcropApiImg1 = this;
+                });
+            }
+            else if(imgId == 'inputImg2')
+            {
+                if (jcropApiImg2 != null) {
+                jcropApiImg2.destroy();
+                }
+                $("#imgViews #inputImg2").empty();
+                $("#imgViews #inputImg2").append("<div class=\"column50\"> <canvas id=\"canvasImg2\"></div>");
+                canvasImg2 = $("#canvasImg2")[0];
+                contextImg2 = canvasImg2.getContext("2d");
+                canvasImg2.width = image2.width;
+                canvasImg2.height = image2.height;
+                contextImg2.drawImage(image2, 0, 0);
+                $("#canvasImg2").Jcrop({
+                    onSelect: function(coord){applyCrop(coord, imgId);},
+                    boxWidth: crop_max_width,
+                    boxHeight: crop_max_height
+                }, function() {
+                    jcropApiImg2 = this;
+                });
+            }
+        }
+
+        function applyCrop(coords, imgId) {
+            let x = Math.round(coords.x);
+            let y = Math.round(coords.y);
+            let w = Math.round(coords.w);
+            let h = Math.round(coords.h);
+
+            if(imgId == 'inputImg1')
+            {
+                canvasImg1.width = w;
+                canvasImg1.height = h;
+                contextImg1.drawImage(image1, x, y, w, h, 0, 0, canvasImg1.width, canvasImg1.height);
+            }
+            else if(imgId == 'inputImg2')
+            {
+                canvasImg2.width = w;
+                canvasImg2.height = h;
+                contextImg2.drawImage(image2, x, y, w, h, 0, 0, canvasImg2.width, canvasImg2.height);
+            }
+            
+            validateImage(imgId);
+        }
+
+        $("#form").submit(function(e) {
+        e.preventDefault();
+        formData = new FormData($(this)[0]);
+        var blob = dataURLtoBlob(canvasImg1.toDataURL('image/png'));
+        //---Add file blob to the form data
+        formData.append("cropped_image[]", blob);
+        $.ajax({
+            url: "/twoFacesMorphingRes",
+            type: "POST",
+            data: formData,
+            enctype: 'multipart/form-data',
+            processData: false,  // Important for multipart/form-data!
+            contentType: false,
+            cache: false,
+            processData: false,
+            complete: function(data) {}
+        });
+        });
+    //end script 
 
     <div class="div-centered">
         <div class="containerForm">
             <h1>Two Faces Morphing</h1><br/>
-            <form action="/twoFacesMorphingRes" method="post" id="uploadImage" enctype="multipart/form-data">
+            <form method="post" id="uploadImage" enctype="multipart/form-data">
                 <label>Choose the images and select only the section of the face</label>
-                <input type="file" name="pic" value="img1" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadFileImg1(event)" required > 
-                <input type="file" name="pic" value="img2" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadFileImg2(event)" required >
-                <div class="row">
-                    <div class="column50">
-                        <img id="outputImg1" name="images"  width="100%" height="100%"/>
-                    </div>
-                    <div class="column50">
-                        <img id="outputImg2" name="images"  width="100%" height="100%"/>                
-                    </div>
+                <input type="file" id="inputImg1" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadImage(event)" required > 
+                <input type="file" id="inputImg2" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadImage(event)" required >
+                <div class="row" id="imgViews">
+                    //javascript will add images here
+                    <div id="inputImg1"></div>
+                    <div id="inputImg2"></div>
                 </div>
                 <br/>
                 <label for="widthImgs">Width of the output images</label>
