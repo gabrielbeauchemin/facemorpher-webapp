@@ -4,19 +4,27 @@ let router = express.Router();
 const uuidv4 = require('uuid/v4');
 let multer  = require('multer');
 let path = require('path');
+var mime = require('mime-to-extensions')
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let path = './public/images/' + uuidv4() + '/'; //a different folder for each request
+    let path = './public/images/' + req.imagesFolder  + '/'; //a different folder for each request
     file.path = path;
-    fs.mkdirSync(path);
+    if (!fs.existsSync(path)){
+      fs.mkdirSync(path);
+    }
     cb(null, path);
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname);
+    cb(null, file.fieldname + '.' + mime.extension(file.mimetype));
   }
 })
 let upload = multer({ storage: storage });
+
+const preuploadMiddleware = (req, res, next) => {
+  req.imagesFolder = uuidv4();
+  next();
+};
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -27,23 +35,44 @@ router.get('/twoFacesMorphingForm', function(req, res, next) {
   res.render('twoFacesMorphingForm');
 });
 
-router.post('/twoFacesMorphingRes', upload.any(), function(req, res, next) {
+router.post('/twoFacesMorphingForm/UploadImages', preuploadMiddleware, upload.any(), function(req, res, next) {
   //If the two faces are not sent. Should not be the case because the form prevents it
   if(typeof req.files == 'undefined' || req.files.length < 2)
   {
-    res.render('main');
+    res.send('');
   }
   else
   {
     //generate interpolated images
     //...
 
-    let img1Path = req.files[0].path.replace(/\\/g,"/").replace('public/','');
-    let img2Path = req.files[1].path.replace(/\\/g,"/").replace('public/','');
-    res.render('twoFacesMorphingRes', { img1Path: img1Path, img2Path: img2Path});
+    res.send(req.imagesFolder);
+  }
+});
+
+router.get('/twoFacesMorphingRes', function(req, res, next) {
+  if(req.query.imagesFolder == "undefinied")
+  {
+    return res.render('main');
   }
 
-  
+  let dir = "./public/images/" + req.query.imagesFolder
+  let files = fs.readdirSync(dir);
+  let filesFiltered = [];
+  for (let i in files){
+      var name = dir + '/' + files[i];
+      if (!fs.statSync(name).isDirectory()){
+        filesFiltered.push("./images/" + req.query.imagesFolder + '/' + files[i]);
+      }
+  }
+  if(filesFiltered.length < 2)
+  {
+    res.render('main');
+  } 
+  else
+  {
+    res.render('twoFacesMorphingRes', { img1Path: filesFiltered[0], img2Path: filesFiltered[1]});
+  } 
 });
 
 router.get('/multipleFacesMorphingForm', function(req, res, next) {

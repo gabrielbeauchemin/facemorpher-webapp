@@ -8,9 +8,10 @@ block content
     script 
         include ../public/javascripts/jcrop/jquery.Jcrop.js
 
+    //jcrop and sumbit 2 images. Inspiration: http://jsfiddle.net/w1Lh4w2t/
     script.
-        var crop_max_width = 600;
-        var crop_max_height = 600;
+        var crop_max_width = 300;
+        var crop_max_height = 300;
         var jcropApiImg1;
         var canvasImg1; 
         var contextImg1; 
@@ -21,31 +22,30 @@ block content
         var image2; 
 
         function loadImage(event) {
-        if (event.target.files && event.target.files[0]) {
-            let selectedImgId = event.currentTarget.id;
-            if(selectedImgId == 'inputImg1')
-            {
-                var reader = new FileReader();
-                canvasImg1 = null;
-                reader.onload = function(e) {
-                image1 = new Image();
-                image1.onload = function(){validateImage(selectedImgId);};
-                image1.src = URL.createObjectURL(event.target.files[0]);
+            if (event.target.files && event.target.files[0]) {
+                let selectedImgId = event.currentTarget.id;
+                if(selectedImgId == 'inputImg1')
+                {
+                    var reader = new FileReader();
+                    canvasImg1 = null;
+                    reader.onload = function(e) {
+                    image1 = new Image();
+                    image1.onload = function(){validateImage(selectedImgId);};
+                    image1.src = URL.createObjectURL(event.target.files[0]);
+                    }
+                    reader.readAsDataURL(event.target.files[0]);
                 }
-                reader.readAsDataURL(event.target.files[0]);
-            }
-            else if(selectedImgId == 'inputImg2')
-            {
-                var reader = new FileReader();
-                canvasImg2 = null;
-                reader.onload = function(e) {
-                image2 = new Image();
-                image2.onload = function(){validateImage(selectedImgId);};
-                image2.src = URL.createObjectURL(event.target.files[0]);
+                else if(selectedImgId == 'inputImg2')
+                {
+                    var reader = new FileReader();
+                    canvasImg2 = null;
+                    reader.onload = function(e) {
+                    image2 = new Image();
+                    image2.onload = function(){validateImage(selectedImgId);};
+                    image2.src = URL.createObjectURL(event.target.files[0]);
+                    }
+                    reader.readAsDataURL(event.target.files[0]); 
                 }
-                reader.readAsDataURL(event.target.files[0]); 
-            }
-            
             }
         }
 
@@ -103,7 +103,7 @@ block content
                 jcropApiImg1.destroy();
                 }
                 $("#imgViews #inputImg1").empty();
-                $("#imgViews #inputImg1").append("<div class=\"column50\"> <canvas id=\"canvasImg1\"></div>");
+                $("#imgViews #inputImg1").append("<label>Image1:</label><canvas id=\"canvasImg1\">");
                 canvasImg1 = $("#canvasImg1")[0];
                 contextImg1 = canvasImg1.getContext("2d");
                 canvasImg1.width = image1.width;
@@ -123,7 +123,7 @@ block content
                 jcropApiImg2.destroy();
                 }
                 $("#imgViews #inputImg2").empty();
-                $("#imgViews #inputImg2").append("<div class=\"column50\"> <canvas id=\"canvasImg2\"></div>");
+                $("#imgViews #inputImg2").append("<label>Image2:</label><canvas id=\"canvasImg2\">");
                 canvasImg2 = $("#canvasImg2")[0];
                 contextImg2 = canvasImg2.getContext("2d");
                 canvasImg2.width = image2.width;
@@ -160,31 +160,40 @@ block content
             
             validateImage(imgId);
         }
-
-        $("#form").submit(function(e) {
-        e.preventDefault();
-        formData = new FormData($(this)[0]);
-        var blob = dataURLtoBlob(canvasImg1.toDataURL('image/png'));
-        //---Add file blob to the form data
-        formData.append("cropped_image[]", blob);
-        $.ajax({
-            url: "/twoFacesMorphingRes",
-            type: "POST",
-            data: formData,
-            enctype: 'multipart/form-data',
-            processData: false,  // Important for multipart/form-data!
-            contentType: false,
-            cache: false,
-            processData: false,
-            complete: function(data) {}
-        });
-        });
+        
+        function uploadImagesAndForm(event)
+        {
+            event.preventDefault();
+            var getUrl = window.location;
+            var baseUrl = getUrl.protocol + "//" + getUrl.host + "/";
+            let url = baseUrl + "twoFacesMorphingForm/UploadImages";
+            formData = new FormData($('form')[0]);
+            var blob1 = dataURLtoBlob(canvasImg1.toDataURL('image/png'));
+            var blob2 = dataURLtoBlob(canvasImg2.toDataURL('image/png'));
+            //---Add file blob to the form data
+            formData.append("img1", blob1);
+            formData.append("img2", blob2);
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: formData,
+                enctype: 'multipart/form-data',
+                processData: false,  // Important for multipart/form-data!
+                contentType: false,
+                cache: false,
+                processData: false,
+                complete: function(data) {
+                    window.location.href = baseUrl + "twoFacesMorphingRes?imagesFolder=" + data.responseText;
+                }
+            });
+        }
+    
     //end script 
 
     <div class="div-centered">
         <div class="containerForm">
             <h1>Two Faces Morphing</h1><br/>
-            <form method="post" id="uploadImage" enctype="multipart/form-data">
+            <form action="" onsubmit="uploadImagesAndForm(event)">
                 <label>Choose the images and select only the section of the face</label>
                 <input type="file" id="inputImg1" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadImage(event)" required > 
                 <input type="file" id="inputImg2" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadImage(event)" required >
@@ -201,7 +210,7 @@ block content
                 <label for="nbrImgs">Number of images to generate</label> 
                 <input type="number" name="nbrImgs" value="30" min="1" max="100" required ><br/>
                 <br/>
-                <input class="page-scroll btn btn-xl" type="submit" value="Morph" a>
+                <input class="page-scroll btn btn-xl" type="submit" value="Morph">
             </form>
         </div>
     </div>
