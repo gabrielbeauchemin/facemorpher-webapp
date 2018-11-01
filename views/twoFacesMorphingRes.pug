@@ -1,22 +1,58 @@
 extends layout
 
 block content
-    img(src='') 
+    script.
+      function updateMorphedImg(value)
+      {
+        let morphingsImgs = document.getElementById('morphingImgs').children;
+        let indexImgToSelect =  Math.round(value / 100 * (morphingsImgs.length-1));
+        for (var i = 0; i < morphingsImgs.length; i++) 
+        {
+          var img = morphingsImgs[i];
+          if(i == indexImgToSelect)
+          {
+            img.removeAttribute("hidden");
+          }
+          else
+          {
+            img.setAttribute("hidden", "hidden");
+          }
+        }
+      }
+    //end script
+
     <div class="div-centered">
       <h1>Morphing Two Faces Results</h1>
-      <div class="responsive">
-        <div class="gallery">
-            img.image(src= "./" +img1Path, width="100%" height="100%")
+
+      if error
+            <br/> <br/> <br/>
+            <span style="color:#ff0000;font-weight:bold">There was an error during the morphing. Check that the images contain a human face and that the faces are well cropped, then try again.</span>
+            <br/>
+      else
+        <div class="responsive">
+          <div class="gallery">
+              img.image(src=img1Path, width="100%" height="100%")
+          </div>
         </div>
-      </div>
-      <div class="responsive">
-        <div class="gallery">
-            img.image(src="./" + imgInter, width="100%" height="100%")                
+        <div class="responsive">
+          <div class="gallery">
+              <input type="range" min="1" max="100" value="50" class="slider" id="slider" oninput="updateMorphedImg(this.value)">
+              <div id="morphingImgs">
+                each morphingImg,i in morphingsImgs
+                  if i == morphingsImgs.length / 2
+                    img.image(src=morphingImg, width="100%" height="100%") 
+                  else
+                    img.image(src=morphingImg, width="100%" height="100%" hidden)
+              </div>
+          </div>
         </div>
-      </div>
-      <div class="responsive">
-        <div class="gallery">
-            img.image(src="./" + img2Path, width="100%" height="100%")                
+        <div class="responsive">
+          <div class="gallery">
+              img.image(src=img2Path, width="100%" height="100%")                
+          </div>
         </div>
-      </div>
+        <div class="clearfix"></div>
+        <br>
+        <br>
+        <input class="page-scroll btn btn-xl" type="submit" value="Download" width="100%">
     </div>

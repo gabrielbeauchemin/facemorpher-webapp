@@ -7,18 +7,23 @@ block content
         if inputImgs.length < 2
             <span style="color:#ff0000;">To generate new images using morphing, we need at least 2 images.</span>
             <br/>
-
-        <h3>Input Visages:</h3>
-        each inputImg in inputImgs
-            <div class="responsive">
-                <div class="gallery">
-                    img.image(src= "./" + inputImg, width=600 height=400)
+        else 
+            <h3>Input Visages:</h3>
+            each inputImg in inputImgs
+                <div class="responsive">
+                    <div class="gallery">
+                        img.image(src= inputImg, width=600 height=400)
+                    </div>
                 </div>
-            </div>
-        <div class="clearfix"></div>
-        <br/>
+            <div class="clearfix"></div>
+            <br/>
 
-        <h3>Morphed Visages:</h3>
+            <h3>Morphed Visages:</h3>
+
+            <div class="clearfix"></div>
+            <br>
+            <br>
+            <input class="page-scroll btn btn-xl" type="submit" value="Download" width="100%">
 
 
     </div>

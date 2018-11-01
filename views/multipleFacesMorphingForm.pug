@@ -1,19 +1,237 @@
 extends layout
 
 block content
+    //jcrop to crop images
+    script 
+        include ../public/javascripts/jcrop/jquery.Jcrop.js
+
+    //jcrop and submit multiple images. Inspiration: http://jsfiddle.net/w1Lh4w2t/
+    script.
+        let crop_max_width = 300;
+        let crop_max_height = 300;
+        let jcropApiImgs = new Map();
+        let canvasImgs = new Map(); 
+        let contextImgs = new Map(); 
+        let imgs = new Map(); 
+        const standardAirOutputImg = crop_max_width * crop_max_height;
+        let ratioWidthHeight;
+
+        function loadImages(event) 
+        {
+            if (event.target.files)
+            {
+                jcropApiImgs.clear();
+                canvasImgs.clear();
+                contextImgs.clear();
+                imgs.clear();
+                $("#imgViews").empty();
+                for(let i = 0; i < event.target.files.length; ++i)
+                {
+                    let imgId = "img" + i;
+                    let reader = new FileReader();
+                    canvasImgs.set(imgId,null);
+                    jcropApiImgs.set(imgId, null);
+                    reader.onload = function(e) 
+                    {
+                        let img = new Image();
+                        img.onload = function(){validateImage(imgId);};
+                        img.src = URL.createObjectURL(event.target.files[i]);
+                        imgs.set(imgId, img);
+                    }
+                    reader.readAsDataURL(event.target.files[i]);
+                }
+            }
+        }
+
+        function dataURLtoBlob(dataURL) 
+        {
+            var BASE64_MARKER = ';base64,';
+            if (dataURL.indexOf(BASE64_MARKER) == -1) {
+                var parts = dataURL.split(',');
+                var contentType = parts[0].split(':')[1];
+                var raw = decodeURIComponent(parts[1]);
+
+                return new Blob([raw], {
+                type: contentType
+                });
+            }
+            var parts = dataURL.split(BASE64_MARKER);
+            var contentType = parts[0].split(':')[1];
+            var raw = window.atob(parts[1]);
+            var rawLength = raw.length;
+            var uInt8Array = new Uint8Array(rawLength);
+            for (var i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+
+            return new Blob([uInt8Array], {
+                type: contentType
+            });
+        }
+
+        function validateImage(imgId)
+        {
+            let canvasImg = canvasImgs.get(imgId);
+            if (canvasImg != null) 
+            {
+                let img = imgs.get(imgId);
+                img.id = imgId;
+                img.onload = function(){restartJcrop(imgId);};
+                img.src = canvasImg.toDataURL('image/png');
+            } 
+            else restartJcrop(imgId);
+        }
+
+        function updateWidthHeigth()
+        {
+            if($("#keepProportions")[0].checked)
+            {
+                
+                let averageWidth = 0, averageHeight = 0;
+                for (let [id, img] of imgs) 
+                {
+                    averageWidth += img.width;
+                    averageHeight += img.height;
+                }
+                averageWidth /= imgs.size;
+                averageHeight /= imgs.size;
+
+                ratioWidthHeight = averageWidth / averageHeight; //used later if checkbox keep proportioned is checked
+
+                let resizeFactor =  Math.sqrt(standardAirOutputImg / (averageWidth * averageHeight));
+
+                $("#widthImgs").val(Math.round(resizeFactor * averageWidth));
+                $("#heightImgs").val(Math.round(resizeFactor * averageHeight));
+            }
+        }
+
+        function restartJcrop(imgId) 
+        {
+            let imgNumber = imgId.replace("img","");
+            let jcropApiImg = jcropApiImgs.get(imgId);
+            if (jcropApiImg != null) {
+                jcropApiImg.destroy();
+                $("div#img" + imgNumber).append("<canvas id=\"canvasImg" + imgNumber + "\">");
+            }
+            else
+            {
+                let newCanvas = "<div id=\"img" + imgNumber + "\"><canvas id=\"canvasImg" + imgNumber + "\"> </div> <br>";
+                $("#imgViews").append(newCanvas);
+            }
+            
+            let img = imgs.get(imgId);
+            let canvasImg = $("#canvasImg" + imgNumber)[0];
+            canvasImgs.set(imgId, canvasImg);
+            let contextImg = canvasImg.getContext("2d");
+            canvasImg.width = img.width;
+            canvasImg.height = img.height;
+            updateWidthHeigth();
+            contextImg.drawImage(img, 0, 0);
+            contextImgs.set(imgId, contextImg);
+            $("#canvasImg" + imgNumber).Jcrop({
+                onSelect: function(coord){applyCrop(coord, imgId);},
+                boxWidth: crop_max_width,
+                boxHeight: crop_max_height},
+                function() {jcropApiImgs.set(imgId, this);});
+        }
+
+        function applyCrop(coords, imgId) 
+        {
+            let x = Math.round(coords.x);
+            let y = Math.round(coords.y);
+            let w = Math.round(coords.w);
+            let h = Math.round(coords.h);
+
+            let canvasImg = canvasImgs.get(imgId);
+            let img = imgs.get(imgId);
+            canvasImg.width = w;
+            canvasImg.height = h;
+            let contextImg = contextImgs.get(imgId);
+            contextImg.drawImage(img, x, y, w, h, 0, 0, canvasImg.width, canvasImg.height);
+            
+            validateImage(imgId);
+        }
+
+        function uploadImagesAndForm(event)
+        {
+            event.preventDefault();
+            let getUrl = window.location;
+            let baseUrl = getUrl.protocol + "//" + getUrl.host + "/";
+            let url = baseUrl + "multipleFacesMorphingForm/UploadImages";
+            formData = new FormData($('form')[0]);
+            
+            for (let [id, canvasImg] of canvasImgs) 
+            {
+              let blob = dataURLtoBlob(canvasImg.toDataURL('image/png'));
+              formData.append(id, blob);
+            }
+            
+            $.ajax({
+                url: url,
+                type: "POST",
+                data: formData,
+                enctype: 'multipart/form-data',
+                processData: false,  // Important for multipart/form-data!
+                contentType: false,
+                cache: false,
+                processData: false,
+                complete: function(data) {
+                    window.location.href = baseUrl + "multipleFacesMorphingRes?imagesFolder=" + data.responseText;
+                }
+            });
+        }
+
+        function updateProportions(event)
+        {
+            if($("#keepProportions")[0].checked)
+            {
+              let idField = event.currentTarget.id;
+              if(idField == "widthImgs")
+              {
+                  $("#heightImgs").val(Math.round( (1/ratioWidthHeight) * $("#widthImgs").val()));
+              }
+              else if(idField == "heightImgs")
+              {
+                  
+                  $("#widthImgs").val(Math.round(ratioWidthHeight * $("#heightImgs").val()));
+              }
+            }
+        }
+
+        function updateOnCheck()
+        {
+            if($("#keepProportions")[0].checked)
+            {
+                //that will calls the event updateProportions
+                //WidthImgs is choosed but height could be choose instead
+                var event = new Event('change');
+                document.querySelector("#widthImgs").dispatchEvent(event);
+            }
+        }
+    //end script
+
     <div class="div-centered">
         <div class="containerForm">
             <h1>Multiple Faces Morphing</h1><br/>
             <h4>Select the images to morph and the morphing options</h4>
-            <form action="/multipleFacesMorphingRes" method="post" id="uploadImage" enctype="multipart/form-data">
+            <form action="" onsubmit="uploadImagesAndForm(event)">
                 <label for="imgs">Images</label>
-                <input type="file" name="images" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" multiple required> 
+                <input type="file" name="images" accept=".bmp,.cur,.gif,.hdf4,.ico,.jpg,.jp2,.pmb,.pcx,.pgm,.png,.ppm,.ras,.tiff,.xwd" onchange="loadImages(event)" multiple required> 
+                <div id="imgViews">
+                //javascript will add images here
+                </div><br>
+                <div display="block">
+                    <label style="font-weight:normal;" for="keepProportions">
+                        <input type="checkbox" id="keepProportions" onchange="updateOnCheck()"checked/>
+                        <span>keep proportions</span>
+                    </label>
+                </div>
                 <label for="widthImgs">Width of the output images</label>
-                <input type="number" name="widthImgs" value="300" min="1" max="1000" required > <br/>
-                <label for="heigthImgs">Heigth of the output images</label>
-                <input type="number" name="heigthImgs" value="300" min="1" max="1000" required > <br/>
+                <input type="number" step="1" id="widthImgs" class="full-width" value="300" min="1" max="1000" onchange="updateProportions(event)" required > <br/>
+                <label for="heightImgs">Height of the output images</label>
+                <input type="number" step="1" id="heightImgs" class="full-width" value="300" min="1" max="1000" onchange="updateProportions(event)" required > <br/>
                 <label for="nbrImgs">Number of images to generate</label> 
-                <input type="number" name="nbrImgs" value="30" min="1" max="100" required ><br/>
+                <input type="number" step="1" id="nbrImgs" class="full-width" value="30" min="1" max="100" required ><br/>
                 <br/>
                 <input class="page-scroll btn btn-xl" type="submit" value="Morph" a>
             </form>

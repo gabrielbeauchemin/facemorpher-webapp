@@ -20,8 +20,11 @@
 }
 
 .containerForm input {
-  width: 100%;
   clear: both;
+}
+
+.containerForm input.full-width {
+  width: 100%;
 }
 
 /* two are three images side by side */
