@@ -6,6 +6,7 @@ let multer  = require('multer');
 let path = require('path');
 var mime = require('mime-to-extensions')
 const { execFile } = require('child_process');
+var archiver = require('archiver');
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -76,11 +77,12 @@ router.get('/twoFacesMorphingRes', function(req, res, next) {
     return res.render('twoFacesMorphingRes', { error: true});
   }
 
-  let pathGeneratedImgs = path.resolve('./public/images/' + req.query.imagesFolder + '/generatedImages') + "\\";
+  let pathGeneratedImgs = path.resolve('./public/images/' + req.query.imagesFolder + '/generatedImages') + "/";
   let files = fs.readdirSync(pathGeneratedImgs);
   let imgsPath = [];
   for (let i in files)
   {
+    //todo: assure files are imgs, as it can also be a file .zip if the user downloaded the generated images
     imgsPath.push("./images/" + req.query.imagesFolder + '/generatedImages/' + files[i]);
   }
   
@@ -116,6 +118,11 @@ router.get('/twoFacesMorphingRes', function(req, res, next) {
   } 
 });
 
+router.get('/twoFacesMorphingRes/Download', function(req, res, next) 
+{
+  return downloadFiles(req.query.imagesFolder, res);
+});
+
 router.get('/multipleFacesMorphingForm', function(req, res, next) {
   res.render('multipleFacesMorphingForm');
 });
@@ -132,36 +139,118 @@ router.post('/multipleFacesMorphingForm/UploadImages', preuploadMiddleware, uplo
     fs.unlinkSync("./public/images/" + req.imagesFolder + "/images.jpeg");
 
     //generate interpolated images
-    //...
-
-    res.send(req.imagesFolder);
+    let pathImgs = path.resolve('./public/images/' + req.imagesFolder) + "/";
+    let pathGeneratedImgs = path.resolve('./public/images/' + req.imagesFolder + '/generatedImages') + "/";
+    fs.mkdirSync(pathGeneratedImgs);
+    let argsMorphing = ["multiplefaces", pathImgs, pathGeneratedImgs, req.body.nbrImgs.toString(), req.body.heightImgs.toString(), req.body.widthImgs.toString()];
+    process.chdir('./facemorpher/'); //change current directory for the exe call
+    const child = execFile(faceMorpherExePath, argsMorphing, (error, stdout, stderr) => 
+    {
+      process.chdir('..'); //change back the root current directory for later uses
+      if (error) 
+      {
+        res.send('');
+      }
+      else
+      {
+        res.send(req.imagesFolder);
+      }
+    });
   }
 });
 
-router.get('/multipleFacesMorphingRes', upload.any(), function(req, res, next) {
+router.get('/multipleFacesMorphingRes', function(req, res, next) 
+{
   if(req.query.imagesFolder == "undefinied" || req.query.imagesFolder == "")
   {
     //todo: when req.query.imagesFolder == "" redirect to error page
     return res.render('main');
   }
 
-  let dir = "./public/images/" + req.query.imagesFolder
-  let files = fs.readdirSync(dir);
-  let filesFiltered = [];
+  let dirImgsInput = "./public/images/" + req.query.imagesFolder
+  let files = fs.readdirSync(dirImgsInput);
+  let imgsInput = [];
   for (let i in files){
-      var name = dir + '/' + files[i];
+      var name = dirImgsInput + '/' + files[i];
       if (!fs.statSync(name).isDirectory()){
-        filesFiltered.push("./images/" + req.query.imagesFolder + '/' + files[i]);
+        imgsInput.push("./images/" + req.query.imagesFolder + '/' + files[i]);
       }
   }
-  if(filesFiltered.length < 2)
+
+  let dirImgsGenerated = "./public/images/" + req.query.imagesFolder + '/generatedImages';
+  files = fs.readdirSync(dirImgsGenerated);
+  let imgsGenerated = [];
+  for (let i in files)
+  {
+      //assure files are imgs, as it can also be a file .zip if the user downloaded the generated images 
+      //or .txt, describing the ancestors of generated images
+      if( path.extname(files[i]) != '.zip' || path.extname(files[i]) != '.txt')
+      {
+        imgsGenerated.push("./images/" + req.query.imagesFolder + '/generatedImages/' + files[i]);
+      }
+  }
+
+  if(imgsInput.length < 2 || imgsGenerated.length < 2)
   {
     res.render('main');
   } 
   else
   {
-    res.render('multipleFacesMorphingRes', { inputImgs: filesFiltered});
+    res.render('multipleFacesMorphingRes', { inputImgs: imgsInput, generatedImgs: imgsGenerated});
   } 
 });
+
+router.get('/multipleFacesMorphingRes/Download', function(req, res, next) 
+{
+  return downloadFiles(req.query.imagesFolder, res);
+});
+
+function downloadFiles(requestImgsFolder, res)
+{
+  let dirImgsInput = "./public/images/" + requestImgsFolder + "/generatedImages";
+  let files = fs.readdirSync(dirImgsInput);
+  let imgsAndTxt = []; //includes the txt file describing the parents of each generated img
+  for (let i in files)
+  {
+    imgsAndTxt.push(path.resolve("./public/images/" + requestImgsFolder + '/generatedImages/' + files[i]));
+  }
+  
+  let outputPath = path.resolve("./public/images/" + requestImgsFolder + '/generatedImages/morphedImages.zip');
+  return zipFiles(imgsAndTxt, outputPath, res);
+};
+
+//zip files and return to download to the user
+function zipFiles(filesToZipPath, outputPath, res)
+{
+  var archive = archiver('zip', {
+    zlib: { level: 9 } // Sets the compression level.
+  });
+  archive.pipe(res);
+  
+  archive.on('error', function(err) 
+  {
+    //nothing to do: keep only for debug purposes
+    return;
+  });
+
+  archive.on('finish', function() 
+  {
+    //nothing to do: keep only for debug purposes
+    return;
+  });
+  
+  //archive.pipe(output); // pipe archive data to the file
+  
+  // append the files to the zip
+  for (let i in filesToZipPath)
+  {
+      archive.file(filesToZipPath[i], { name: path.basename(filesToZipPath[i]) });
+  }
+  
+  // finalize the archive (ie we are done appending files but streams have to finish yet)
+  // 'close' or 'end' may be fired right after calling this method so register to them beforehand
+  archive.finalize();
+};
+
 
 module.exports = router;

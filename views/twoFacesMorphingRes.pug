@@ -19,6 +19,19 @@ block content
           }
         }
       }
+
+      function addParamImagesFolder()
+      {
+        var url_string = window.location.href;
+        var url = new URL(url_string);
+        var imagesFolder = url.searchParams.get("imagesFolder");
+        $('<input />').attr('type', 'hidden')
+            .attr('name', "imagesFolder")
+            .attr('value', imagesFolder)
+            .appendTo('#downloadForm');
+        return true;
+      }
+
     //end script
 
     <div class="div-centered">
@@ -39,7 +52,7 @@ block content
               <input type="range" min="1" max="100" value="50" class="slider" id="slider" oninput="updateMorphedImg(this.value)">
               <div id="morphingImgs">
                 each morphingImg,i in morphingsImgs
-                  if i == morphingsImgs.length / 2
+                  if i == Math.round(morphingsImgs.length / 2)
                     img.image(src=morphingImg, width="100%" height="100%") 
                   else
                     img.image(src=morphingImg, width="100%" height="100%" hidden)
@@ -54,5 +67,7 @@ block content
         <div class="clearfix"></div>
         <br>
         <br>
-        <input class="page-scroll btn btn-xl" type="submit" value="Download" width="100%">
+        <form action="/twoFacesMorphingRes/Download" method="GET" id="downloadForm" onsubmit="addParamImagesFolder()">
+          <input class="page-scroll btn btn-xl" type="submit" value="Download" width="100%">
+        </form>
     </div>

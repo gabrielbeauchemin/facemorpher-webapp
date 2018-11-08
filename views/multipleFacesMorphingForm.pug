@@ -227,11 +227,11 @@ block content
                     </label>
                 </div>
                 <label for="widthImgs">Width of the output images</label>
-                <input type="number" step="1" id="widthImgs" class="full-width" value="300" min="1" max="1000" onchange="updateProportions(event)" required > <br/>
+                <input type="number" step="1" id="widthImgs" name="widthImgs" class="full-width" value="300" min="1" max="1000" onchange="updateProportions(event)" required > <br/>
                 <label for="heightImgs">Height of the output images</label>
-                <input type="number" step="1" id="heightImgs" class="full-width" value="300" min="1" max="1000" onchange="updateProportions(event)" required > <br/>
+                <input type="number" step="1" id="heightImgs" name="heightImgs" class="full-width" value="300" min="1" max="1000" onchange="updateProportions(event)" required > <br/>
                 <label for="nbrImgs">Number of images to generate</label> 
-                <input type="number" step="1" id="nbrImgs" class="full-width" value="30" min="1" max="100" required ><br/>
+                <input type="number" step="1" id="nbrImgs" name="nbrImgs" class="full-width" value="30" min="1" max="100" required ><br/>
                 <br/>
                 <input class="page-scroll btn btn-xl" type="submit" value="Morph" a>
             </form>

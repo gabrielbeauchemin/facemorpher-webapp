@@ -1,6 +1,21 @@
 extends layout
 
 block content
+
+    script.
+      function addParamImagesFolder()
+      {
+        var url_string = window.location.href;
+        var url = new URL(url_string);
+        var imagesFolder = url.searchParams.get("imagesFolder");
+        $('<input />').attr('type', 'hidden')
+            .attr('name', "imagesFolder")
+            .attr('value', imagesFolder)
+            .appendTo('#downloadForm');
+        return true;
+      }
+
+    //end script
     
     <div class="div-centered">
         <h1>Morphing Multiple Faces Results</h1>
@@ -19,12 +34,17 @@ block content
             <br/>
 
             <h3>Morphed Visages:</h3>
-
+            each generatedImg in generatedImgs
+                <div class="responsive">
+                    <div class="gallery">
+                        img.image(src= generatedImg, width=600 height=400)
+                    </div>
+                </div>
             <div class="clearfix"></div>
             <br>
             <br>
-            <input class="page-scroll btn btn-xl" type="submit" value="Download" width="100%">
-
-
+            <form action="/multipleFacesMorphingRes/Download" method="GET" id="downloadForm" onsubmit="addParamImagesFolder()">
+                <input class="page-scroll btn btn-xl" type="submit" value="Download" width="100%">
+            </form>
     </div>
     
