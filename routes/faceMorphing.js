@@ -10,7 +10,7 @@ var archiver = require('archiver');
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let path = './public/images/' + req.imagesFolder  + '/'; //a different folder for each request
+    let path = __dirname.replace("routes","public") + "/images/" + req.imagesFolder + '/'; //a different folder for each request
     file.path = path;
     if (!fs.existsSync(path)){
       fs.mkdirSync(path);
@@ -28,7 +28,7 @@ const preuploadMiddleware = (req, res, next) => {
   next();
 };
 
-let faceMorpherExePath = path.resolve("./faceMorpher/FaceMorpher.exe");
+let faceMorpherExePath = path.join(__dirname , "..", "faceMorpher", "FaceMorpher.exe");
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -48,10 +48,10 @@ router.post('/twoFacesMorphingForm/UploadImages', preuploadMiddleware, upload.an
   else
   {
     //generate interpolated images
-    let pathGeneratedImgs = path.resolve('./public/images/' + req.imagesFolder + '/generatedImages') + "\\";
+    let pathGeneratedImgs = path.join(__dirname, "..", 'public' , 'images', req.imagesFolder, 'generatedImages') + "\\";
     fs.mkdirSync(pathGeneratedImgs);
-    let argsMorphing = ["twofaces", path.resolve('./' + req.files[0].path), path.resolve('./' + req.files[1].path), pathGeneratedImgs, req.body.nbrImgs.toString(), req.body.heightImgs.toString(), req.body.widthImgs.toString()];
-    process.chdir('./facemorpher/'); //change current directory for the exe call
+    let argsMorphing = ["twofaces", req.files[0].path, req.files[1].path, pathGeneratedImgs, req.body.nbrImgs.toString(), req.body.heightImgs.toString(), req.body.widthImgs.toString()];
+    process.chdir( path.join(__dirname + "/..", 'facemorpher')); //change current directory for the exe call
     const child = execFile(faceMorpherExePath, argsMorphing, (error, stdout, stderr) => 
     {
       process.chdir('..'); //change back the root current directory for later uses
@@ -77,13 +77,13 @@ router.get('/twoFacesMorphingRes', function(req, res, next) {
     return res.render('twoFacesMorphingRes', { error: true});
   }
 
-  let pathGeneratedImgs = path.resolve('./public/images/' + req.query.imagesFolder + '/generatedImages') + "/";
+  let pathGeneratedImgs = path.join( __dirname, "..", 'public', 'images' , req.query.imagesFolder , 'generatedImages') + "/";
   let files = fs.readdirSync(pathGeneratedImgs);
   let imgsPath = [];
   for (let i in files)
   {
     //todo: assure files are imgs, as it can also be a file .zip if the user downloaded the generated images
-    imgsPath.push("./images/" + req.query.imagesFolder + '/generatedImages/' + files[i]);
+    imgsPath.push( './images/'+ req.query.imagesFolder + '/generatedImages/' + files[i]);
   }
   
   if(imgsPath.length < 2)
@@ -136,14 +136,14 @@ router.post('/multipleFacesMorphingForm/UploadImages', preuploadMiddleware, uplo
   else
   {
     //hack: one not desired image is sent, I don't know why. Delete it.
-    fs.unlinkSync("./public/images/" + req.imagesFolder + "/images.jpeg");
+    fs.unlinkSync( path.join(__dirname, "..", "public" , "images", req.imagesFolder, "images.jpeg"));
 
     //generate interpolated images
-    let pathImgs = path.resolve('./public/images/' + req.imagesFolder) + "/";
-    let pathGeneratedImgs = path.resolve('./public/images/' + req.imagesFolder + '/generatedImages') + "/";
+    let pathImgs = path.join(__dirname, "..", 'public' , 'images', req.imagesFolder) + "/";
+    let pathGeneratedImgs = path.join(__dirname, "..", 'public' , 'images' , req.imagesFolder, 'generatedImages') + "/";
     fs.mkdirSync(pathGeneratedImgs);
     let argsMorphing = ["multiplefaces", pathImgs, pathGeneratedImgs, req.body.nbrImgs.toString(), req.body.heightImgs.toString(), req.body.widthImgs.toString()];
-    process.chdir('./facemorpher/'); //change current directory for the exe call
+    process.chdir(path.join(__dirname, "..", 'facemorpher') + "/"); //change current directory for the exe call
     const child = execFile(faceMorpherExePath, argsMorphing, (error, stdout, stderr) => 
     {
       process.chdir('..'); //change back the root current directory for later uses
@@ -167,17 +167,19 @@ router.get('/multipleFacesMorphingRes', function(req, res, next)
     return res.render('main');
   }
 
-  let dirImgsInput = "./public/images/" + req.query.imagesFolder
+  let dirImgsInput = path.join( __dirname, "..", "public" , "images", req.query.imagesFolder);
   let files = fs.readdirSync(dirImgsInput);
   let imgsInput = [];
-  for (let i in files){
+  for (let i in files)
+  {
       var name = dirImgsInput + '/' + files[i];
-      if (!fs.statSync(name).isDirectory()){
-        imgsInput.push("./images/" + req.query.imagesFolder + '/' + files[i]);
+      if (!fs.statSync(name).isDirectory())
+      {
+        imgsInput.push( './images/' + req.query.imagesFolder + "/" + files[i]);
       }
   }
 
-  let dirImgsGenerated = "./public/images/" + req.query.imagesFolder + '/generatedImages';
+  let dirImgsGenerated = path.join( __dirname, "..", 'public', 'images', req.query.imagesFolder, 'generatedImages');
   files = fs.readdirSync(dirImgsGenerated);
   let imgsGenerated = [];
   for (let i in files)
@@ -186,7 +188,7 @@ router.get('/multipleFacesMorphingRes', function(req, res, next)
       //or .txt, describing the ancestors of generated images
       if( path.extname(files[i]) != '.zip' || path.extname(files[i]) != '.txt')
       {
-        imgsGenerated.push("./images/" + req.query.imagesFolder + '/generatedImages/' + files[i]);
+        imgsGenerated.push( "./images/" + req.query.imagesFolder + '/generatedImages/' + files[i]);
       }
   }
 
@@ -207,15 +209,15 @@ router.get('/multipleFacesMorphingRes/Download', function(req, res, next)
 
 function downloadFiles(requestImgsFolder, res)
 {
-  let dirImgsInput = "./public/images/" + requestImgsFolder + "/generatedImages";
+  let dirImgsInput = path.join( __dirname, "..", "public", "images", requestImgsFolder, "generatedImages");
   let files = fs.readdirSync(dirImgsInput);
   let imgsAndTxt = []; //includes the txt file describing the parents of each generated img
   for (let i in files)
   {
-    imgsAndTxt.push(path.resolve("./public/images/" + requestImgsFolder + '/generatedImages/' + files[i]));
+    imgsAndTxt.push(path.join(__dirname, "..", 'public' , 'images', requestImgsFolder, 'generatedImages', files[i]));
   }
   
-  let outputPath = path.resolve("./public/images/" + requestImgsFolder + '/generatedImages/morphedImages.zip');
+  let outputPath = path.join( __dirname, "..", 'public' , 'images', requestImgsFolder, 'generatedImages', 'morphedImages.zip');
   return zipFiles(imgsAndTxt, outputPath, res);
 };
 
