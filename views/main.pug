@@ -3,9 +3,16 @@ extends layout
 block content
     <div class="div-centered">
         <h1>Welcome!</h1> <br/>
-        <h3>This web application offers a service to do morph images of faces. <br/> Choose between the two following options.</h3>
-        <a  href="/twoFacesMorphingForm">faceMorphing two faces</a>
-        <a  href="/multipleFacesMorphingForm">faceMorphing multiple faces</a>
+        <h3>This web application offers a service to morph images of faces. <br/> Choose between the two following options.</h3>
+        <div > 
+        <br/>
+            <a  href="twoFacesMorphingForm"> 
+            img.image(src= "./images/morphingTwoFacesRes.png", width="49%")
+            </a>
+            <a  href="multipleFacesMorphingForm"> 
+                img.image(src= "./images/morphingMultipleFacesRes.png", width="49%")
+            </a>
+        </div>
     </div>
     
     

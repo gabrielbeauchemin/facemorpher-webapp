@@ -7,6 +7,7 @@ let path = require('path');
 var mime = require('mime-to-extensions')
 const { execFile } = require('child_process');
 var archiver = require('archiver');
+var rimraf = require('rimraf');
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -24,6 +25,7 @@ var storage = multer.diskStorage({
 let upload = multer({ storage: storage });
 
 const preuploadMiddleware = (req, res, next) => {
+  deleteExcessPastRequests();
   req.imagesFolder = uuidv4();
   next();
 };
@@ -224,6 +226,8 @@ function downloadFiles(requestImgsFolder, res)
 //zip files and return to download to the user
 function zipFiles(filesToZipPath, outputPath, res)
 {
+  res.header('Content-Type', 'application/zip');
+  res.header('Content-Disposition', 'attachment; filename="morphingImages.zip"');
   var archive = archiver('zip', {
     zlib: { level: 9 } // Sets the compression level.
   });
@@ -252,6 +256,23 @@ function zipFiles(filesToZipPath, outputPath, res)
   // finalize the archive (ie we are done appending files but streams have to finish yet)
   // 'close' or 'end' may be fired right after calling this method so register to them beforehand
   archive.finalize();
+};
+
+function deleteExcessPastRequests()
+{
+  const NBR_REQUESTS_EXCESS = 100;
+  let dirPastRequests = path.join( __dirname, "..", 'public', 'images');
+  let pastRequests = fs.readdirSync(dirPastRequests)
+                       .filter(file => fs.statSync(path.join(dirPastRequests, file)).isDirectory());
+  if(pastRequests.length >= NBR_REQUESTS_EXCESS)
+  {
+    //delete all folders of the requests
+    for(let i = 0; i < pastRequests.length; ++i)
+    {
+      let pathFolderToDelete = path.join(dirPastRequests, pastRequests[i]);
+      rimraf(pathFolderToDelete, function () {}); //async is necessary here so user do not wait
+    }
+  }
 };
 
 
