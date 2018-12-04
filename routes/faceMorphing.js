@@ -37,6 +37,11 @@ router.get('/', function(req, res, next) {
   res.render('main');
 });
 
+/* GET home page. */
+router.get('/tutorial', function(req, res, next) {
+  res.render('tutorial');
+});
+
 router.get('/twoFacesMorphingForm', function(req, res, next) {
   res.render('twoFacesMorphingForm');
 });
@@ -188,7 +193,7 @@ router.get('/multipleFacesMorphingRes', function(req, res, next)
   {
       //assure files are imgs, as it can also be a file .zip if the user downloaded the generated images 
       //or .txt, describing the ancestors of generated images
-      if( path.extname(files[i]) != '.zip' || path.extname(files[i]) != '.txt')
+      if( path.extname(files[i]) != '.zip' && path.extname(files[i]) != '.txt')
       {
         imgsGenerated.push( "./images/" + req.query.imagesFolder + '/generatedImages/' + files[i]);
       }
