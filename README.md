@@ -1,1 +1,2 @@
+To see a preview of the application, click the image below that opens a youtube video.
 [![Watch the video](https://img.youtube.com/vi/OF02HFrOP9w/maxresdefault.jpg)](https://www.youtube.com/watch?v=OF02HFrOP9w)
